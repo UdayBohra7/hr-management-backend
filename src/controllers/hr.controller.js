@@ -1,25 +1,14 @@
-import { generateOTP } from "../../helpers/otpGenerator.js";
-import { ApiError } from "../../utils/apiError.js";
-import { ApiResponse } from "../../utils/apiResponse.js";
-import { asyncHandler } from "../../utils/asyncHandler.js";
-import User from "../../models/user.models.js";
-import requiredFields from "../../validators/requiredFieldValidator.js";
-import { validateEmail } from "../../validators/emailValidater.js";
-import { validateOtp } from "../../validators/otpValidator.js";
-import mailSender from "../../utils/mailSender.js";
-import Notification from "../../models/notification.model.js";
 import jwt from "jsonwebtoken";
-import Membership from "../../models/membership.model.js";
-import Course from "../../models/course.model.js";
-import Category from "../../models/category.model.js";
-import Favorite from "../../models/favorite.model.js";
-import mongoose from "mongoose";
-import Transaction from "../../models/transaction.model.js";
 import moment from "moment-timezone";
-import ContactUs from "../../models/contactUs.model.js";
+import Hr from "../models/hr.model.js";
+import { validateEmail } from "../validators/emailValidator.js";
+import asyncHandler from "../utils/asyncHandler.js";
+import ApiError from "../utils/apiError.js";
+import requiredFields from "../validators/requiredFieldValidator.js";
+import ApiResponse from "../utils/apiResponse.js";
 
 
-export const registerUser = asyncHandler(async (req, res) => {
+export const registerHr = asyncHandler(async (req, res) => {
     const {  email } = req.body;
 
     requiredFields(["fullName", "email", "password"], req.body);
@@ -29,92 +18,72 @@ export const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid email format");
     }
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-        throw new ApiError(409, "User with this email already exists");
+    const existingHr = await Hr.findOne({ email });
+    if (existingHr) {
+        throw new ApiError(409, "Hr with this email already exists");
     }
 
+    const newHr = new Hr(req.body);
 
-    const newUser = new User(req.body);
+    await newHr.save();
 
-    await newUser.save();
-
-    const mailTemp = {
-        email,
-        name: newUser.fullName,
-        heading: "Welcome",
-        type: "welcome",
-        subject: "Welcome"
-    }
-    try {
-        await mailSender(mailTemp);
-    } catch (error) {
-        console.log(error);
-    }
-
-    const options = {
-        httpOnly: true,
-        secure: req.secure || req.headers['x-forwarded-proto'] === 'https',
-    };
-
-    const accessToken = await newUser.generateTokens();
-    newUser.password = undefined;
-    newUser.otp = undefined;
-    newUser.refreshToken = undefined;
+    const accessToken = await newHr.generateTokens();
+    newHr.password = undefined;
+    newHr.otp = undefined;
+    newHr.refreshToken = undefined;
 
     res.status(201)
-        .cookie("accessToken", accessToken, options)
-        .json(new ApiResponse({ user: newUser, accessToken }, "User registered successfully"));
+        .json(new ApiResponse({ Hr: newHr, accessToken }, "Hr registered successfully"));
 });
-export const loginUser = asyncHandler(async (req, res) => {
+export const loginHr = asyncHandler(async (req, res) => {
     const { email, device } = req.body;
 
     if (!email || !req.body.password) {
         throw new ApiError(400, "Email and password are required");
     }
 
-    let user = await User.findOne({ email });
-    if (!user) {
-        throw new ApiError(404, "User does not exist");
+    let Hr = await Hr.findOne({ email });
+    if (!Hr) {
+        throw new ApiError(404, "Hr does not exist");
     }
 
-    const isPasswordValid = await user.isPasswordMatch(req.body.password);
+    const isPasswordValid = await Hr.isPasswordMatch(req.body.password);
 
     if (!isPasswordValid) {
-        throw new ApiError(401, "Invalid user credentials");
+        throw new ApiError(401, "Invalid Hr credentials");
     }
-    user.device = device
-    await user.save()
-    const accessToken = await user.generateTokens();
+    Hr.device = device
+    await Hr.save()
+    const accessToken = await Hr.generateTokens();
 
     const options = {
         httpOnly: true,
         secure: req.secure || req.headers['x-forwarded-proto'] === 'https',
     };
-    const { password, otp, ...rest } = user._doc
+    const { password, otp, ...rest } = Hr._doc
     res
         .status(200)
         .cookie("accessToken", accessToken, options)
-        .json(new ApiResponse({ user: rest, accessToken }, "Logged-in successfully"));
+        .json(new ApiResponse({ Hr: rest, accessToken }, "Logged-in successfully"));
 });
-export const currentUser = asyncHandler(async (req, res) => {
-    let currUser;
-    if (req.user?.currentMembership) {
-        currUser = await req.user.populate({
+export const currentHr = asyncHandler(async (req, res) => {
+    let currHr;
+    if (req.Hr?.currentMembership) {
+        currHr = await req.Hr.populate({
             path: "currentMembership",
             populate: {
                 path: "membership",
             },
         });
     } else {
-        currUser = req.user;
+        currHr = req.Hr;
     }
     const now = moment().toISOString();
-    if (currUser?.currentMembership && currUser.currentMembership.endDate < now) {
+    if (currHr?.currentMembership && currHr.currentMembership.endDate < now) {
         console.log("Date", now);
         const expiredMembership = await Transaction.updateMany({
-            // _id: currUser.currentMembership._id,
-            user: currUser._id,
+            // _id: currHr.currentMembership._id,
+            Hr: currHr._id,
             endDate: { $lt: now },
             isExpired: false,
         },
@@ -122,11 +91,11 @@ export const currentUser = asyncHandler(async (req, res) => {
         );
         console.log("expired-membership:", expiredMembership);
         const mailTemp = {
-            email: currUser.email,
+            email: currHr.email,
             subject: "Membership Expired",
-            expirationDate: moment(currUser.currentMembership.endDate).format("DD-MM-YYYY"),
-            membershipPlan: currUser.currentMembership.membership.name,
-            name: currUser.fullName,
+            expirationDate: moment(currHr.currentMembership.endDate).format("DD-MM-YYYY"),
+            membershipPlan: currHr.currentMembership.membership.name,
+            name: currHr.fullName,
             type: "membership-expired",
         };
         try {
@@ -134,12 +103,12 @@ export const currentUser = asyncHandler(async (req, res) => {
         } catch (error) {
             console.log(error);
         }
-        currUser.currentMembership = null;
-        await currUser.save();
+        currHr.currentMembership = null;
+        await currHr.save();
     }
 
-    const { password, otp, ...user } = currUser._doc;
-    return res.status(200).json(new ApiResponse(user, "Current user fetched successfully"));
+    const { password, otp, ...Hr } = currHr._doc;
+    return res.status(200).json(new ApiResponse(Hr, "Current Hr fetched successfully"));
 });
 
 export const idVerifyOtp = asyncHandler(async (req, res) => {
@@ -158,32 +127,32 @@ export const idVerifyOtp = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid OTP format");
     }
 
-    let user = await User.findOne({ email });
-    if (!user) {
-        throw new ApiError(404, "User not found");
+    let Hr = await Hr.findOne({ email });
+    if (!Hr) {
+        throw new ApiError(404, "Hr not found");
     }
 
-    const isOTPValid = validateOtp(user.otp, otp)
+    const isOTPValid = validateOtp(Hr.otp, otp)
 
     if (isOTPValid) {
-        user.otp = null;
-        user.isVerified = true
-        await user.save();
+        Hr.otp = null;
+        Hr.isVerified = true
+        await Hr.save();
         return res.status(200).json(new ApiResponse({}, "OTP verified successfully"));
     } else {
         throw new ApiError(400, "Invalid OTP");
     }
 });
 
-export const updateUserDetails = asyncHandler(async (req, res) => {
-    const { user } = req;
-    if (!user || !user.email) {
-        throw new ApiError(400, "User not authenticated");
+export const updateHrDetails = asyncHandler(async (req, res) => {
+    const { Hr } = req;
+    if (!Hr || !Hr.email) {
+        throw new ApiError(400, "Hr not authenticated");
     }
 
     const { fullName, gender, age, image, country, phone, password, oldPassword } = req.body;
     
-    const filter = { email: user.email };
+    const filter = { email: Hr.email };
 
     if (gender && !["male", "female", "other"].includes(gender)) {
         throw new ApiError(400, "Incorrect value for gender enum")
@@ -200,7 +169,7 @@ export const updateUserDetails = asyncHandler(async (req, res) => {
         if(!oldPassword){
             throw new ApiError(400, "Old password is required");
         }
-        const isPasswordMatch = await user.isPasswordMatch(oldPassword);
+        const isPasswordMatch = await Hr.isPasswordMatch(oldPassword);
         if (!isPasswordMatch) {
             throw new ApiError(400, "Old password is incorrect");
         }
@@ -209,13 +178,13 @@ export const updateUserDetails = asyncHandler(async (req, res) => {
 
     const options = { new: true, select: '-password -otp -refreshToken' };
 
-    let updatedUser;
+    let updatedHr;
     try {
-        updatedUser = await User.findOneAndUpdate(filter, update, options);
+        updatedHr = await Hr.findOneAndUpdate(filter, update, options);
     } catch (error) {
-        throw new ApiError(404, `User with email ${user.email} not found !`);
+        throw new ApiError(404, `Hr with email ${Hr.email} not found !`);
     }
-    res.status(200).json(new ApiResponse(updatedUser, "Account updated successfully"));
+    res.status(200).json(new ApiResponse(updatedHr, "Account updated successfully"));
 });
 
 // forgot password
@@ -246,18 +215,18 @@ export const updateForgotPassword = asyncHandler(async (req, res) => {
         }
     }
 
-    let user = await User.findOne({ email });
-    if (!user) {
-        throw new ApiError(404, "User not found");
+    let Hr = await Hr.findOne({ email });
+    if (!Hr) {
+        throw new ApiError(404, "Hr not found");
     }
 
-    const isPasswordMatch = await user.isPasswordMatch(password);
+    const isPasswordMatch = await Hr.isPasswordMatch(password);
     if (isPasswordMatch) {
         throw new ApiError(401, "The new password must be different from the old password");
     }
 
-    user.password = password;
-    await user.save();
+    Hr.password = password;
+    await Hr.save();
 
     const mailTemp = {
         email,
@@ -266,7 +235,7 @@ export const updateForgotPassword = asyncHandler(async (req, res) => {
         `,
         heading: "Password Changed",
         subject: "Password Changed",
-        name: user?.fullName,
+        name: Hr?.fullName,
         type: "password"
     }
     try {
@@ -286,22 +255,22 @@ export const updatePassword = asyncHandler(async (req, res) => {
     if (password === newPassword) {
         throw new ApiError(400, 'New password cannot be the same as the old password');
     }
-    const user = req.user;
-    const isPasswordValid = await user.isPasswordMatch(password);
+    const Hr = req.Hr;
+    const isPasswordValid = await Hr.isPasswordMatch(password);
 
     if (!isPasswordValid) {
         throw new ApiError(400, "Old password not matched")
     }
-    user.password = newPassword
-    await user.save()
+    Hr.password = newPassword
+    await Hr.save()
     const mailTemp = {
-        email: user?.email,
+        email: Hr?.email,
         message: `
             We are pleased to inform you that your password has been successfully changed. This is a confirmation that the change was completed securely and your account is now updated with the new password.
         `,
         heading: "Password Changed",
         subject: "Password Changed",
-        name: user?.fullName,
+        name: Hr?.fullName,
         type: "password"
     }
 

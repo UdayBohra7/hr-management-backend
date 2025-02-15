@@ -1,11 +1,10 @@
 import Hr from "../models/hr.model.js";
-import { ApiError } from "../utils/apiError.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
 import jwt from 'jsonwebtoken';
+import asyncHandler from "../utils/asyncHandler.js";
+import ApiError from "../utils/apiError.js";
 
 export const verifyToken = asyncHandler(async (req, res, next) => {
-    const token = req.cookies?.accessToken ||
-        (req.headers["authorization"]?.replace("Bearer ", "") || "").trim();
+    const token = (req.headers["authorization"]?.replace("Bearer ", "") || "").trim();
 
     if (!token) {
         throw new ApiError(403, "Unauthorized request");
