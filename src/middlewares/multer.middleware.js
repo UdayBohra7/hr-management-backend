@@ -2,11 +2,14 @@ import multer from 'multer';
 import path from 'path';
 import fs from "fs";
 
-const folderRoute = "./public/data/resumes";
+const resumeFolder = './public/data/resumes';
+const docsFolder = './public/data/leaves';
 
-if (!fs.existsSync(folderRoute)) {
-  fs.mkdirSync(folderRoute, { recursive: true });
-}
+[resumeFolder, docsFolder].forEach(folder => {
+  if (!fs.existsSync(folder)) {
+    fs.mkdirSync(folder, { recursive: true });
+  }
+});
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -16,7 +19,7 @@ const storage = multer.diskStorage({
     if (fileType.includes('pdf')) {
       uploadPath = './public/data/resumes';
     } else {
-      uploadPath = './public/data/others';
+      uploadPath = './public/data/leaves';
     }
     cb(null, uploadPath);
   },

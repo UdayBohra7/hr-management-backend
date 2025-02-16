@@ -6,11 +6,11 @@ import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/apiError.js";
 import requiredFields from "../validators/requiredFieldValidator.js";
 import ApiResponse from "../utils/apiResponse.js";
-import Candidate from "../models/candidate.js";
-import Position from "../models/position.js";
-import Employee from "../models/employee.js";
-import Attendance from "../models/attendance.js";
-import Leave from "../models/leave.js";
+import Candidate from "../models/candidate.model.js";
+import Position from "../models/position.model.js";
+import Employee from "../models/employee.model.js";
+import Attendance from "../models/attendance.model.js";
+import Leave from "../models/leave.model.js";
 import { Types } from "mongoose";
 
 
@@ -406,7 +406,35 @@ export const leaveUpdate = asyncHandler(async (req, res) => {
     }
 
 });
+// present employees
+export const getPresentEmployees = asyncHandler(async (req, res) => {
+    let filter = {
+        status: 'present',
+        createdAt: {
+            $gte: moment().tz('Asia/Kolkata').startOf('day').toDate(),
+            $lte: moment().tz('Asia/Kolkata').endOf('day').toDate()
+        }
+    };
 
+    const data = await Attendance.aggregate([
+        { $match: filter },
+        {
+            $lookup: {
+                from: 'employees',
+                localField: 'employeeId',
+                foreignField: '_id',
+                as: 'employee'
+            }
+        },
+        { $unwind: "$employee" }
+    ]);
+
+    if (data.length) {
+        res.status(200).json(new ApiResponse(data, "Present employees fetched successfully"));
+    } else {
+        res.status(200).json(new ApiResponse([], "No present employees found"));
+    }
+});
 
 // upload resume
 export const uploadResume = asyncHandler(async (req, res) => {
@@ -422,7 +450,7 @@ export const uploadResume = asyncHandler(async (req, res) => {
 export const uploadDocs = asyncHandler(async (req, res) => {
     const fileType = req.file.mimetype;
 
-    const fileUrl = `${process.env.BASE_URL}/leave/${req.file.filename}`;
+    const fileUrl = `${process.env.BASE_URL}/leaves/${req.file.filename}`;
 
     res.status(200).json(new ApiResponse(fileUrl, "File uploaded successfully"));
 });
