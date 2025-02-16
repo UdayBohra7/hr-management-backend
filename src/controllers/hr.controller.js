@@ -95,7 +95,7 @@ export const candidateAdd = asyncHandler(async (req, res) => {
 
     const existingCandidate = await Candidate.findOne({ email });
     if (existingCandidate) {
-        throw new ApiError(409, "Hr with this email already exists");
+        throw new ApiError(409, "Candidate with this email already exists");
     }
 
     const newCandidate = new Candidate(req.body);

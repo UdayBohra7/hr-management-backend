@@ -33,6 +33,10 @@ const candidateSchema = new Schema({
         enum:['scheduled','ongoing','selected','rejected','new'],
         default:'new'
     },
+    consentCheck: {
+        type: Boolean,
+        default: false
+    }
 },{timestamps: true})
 
 
