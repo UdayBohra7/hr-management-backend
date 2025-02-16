@@ -63,48 +63,8 @@ export const loginHr = asyncHandler(async (req, res) => {
         .json(new ApiResponse({ ...rest, accessToken }, "Logged-in successfully"));
 });
 export const currentHr = asyncHandler(async (req, res) => {
-    let currHr;
-    if (req.Hr?.currentMembership) {
-        currHr = await req.Hr.populate({
-            path: "currentMembership",
-            populate: {
-                path: "membership",
-            },
-        });
-    } else {
-        currHr = req.Hr;
-    }
-    const now = moment().toISOString();
-    if (currHr?.currentMembership && currHr.currentMembership.endDate < now) {
-        console.log("Date", now);
-        const expiredMembership = await Transaction.updateMany({
-            // _id: currHr.currentMembership._id,
-            Hr: currHr._id,
-            endDate: { $lt: now },
-            isExpired: false,
-        },
-            { $set: { isExpired: true, active: false } }
-        );
-        console.log("expired-membership:", expiredMembership);
-        const mailTemp = {
-            email: currHr.email,
-            subject: "Membership Expired",
-            expirationDate: moment(currHr.currentMembership.endDate).format("DD-MM-YYYY"),
-            membershipPlan: currHr.currentMembership.membership.name,
-            name: currHr.fullName,
-            type: "membership-expired",
-        };
-        try {
-            await mailSender(mailTemp, "membership-expired");
-        } catch (error) {
-            console.log(error);
-        }
-        currHr.currentMembership = null;
-        await currHr.save();
-    }
-
-    const { password, otp, ...Hr } = currHr._doc;
-    return res.status(200).json(new ApiResponse(Hr, "Current Hr fetched successfully"));
+    const { password, otp, ...rest } = req.user._doc;
+    return res.status(200).json(new ApiResponse(rest, "Current Hr fetched successfully"));
 });
 
 export const idVerifyOtp = asyncHandler(async (req, res) => {
@@ -251,30 +211,15 @@ export const updatePassword = asyncHandler(async (req, res) => {
     if (password === newPassword) {
         throw new ApiError(400, 'New password cannot be the same as the old password');
     }
-    const Hr = req.Hr;
-    const isPasswordValid = await Hr.isPasswordMatch(password);
+    const hr = req.user;
+    const isPasswordValid = await hr.isPasswordMatch(password);
 
     if (!isPasswordValid) {
         throw new ApiError(400, "Old password not matched")
     }
-    Hr.password = newPassword
-    await Hr.save()
-    const mailTemp = {
-        email: Hr?.email,
-        message: `
-            We are pleased to inform you that your password has been successfully changed. This is a confirmation that the change was completed securely and your account is now updated with the new password.
-        `,
-        heading: "Password Changed",
-        subject: "Password Changed",
-        name: Hr?.fullName,
-        type: "password"
-    }
-
-    try {
-        mailSender(mailTemp);
-    } catch (error) {
-        console.log(error);
-    }
+    hr.password = newPassword
+    await hr.save()
+    
     return res.status(200).json(new ApiResponse(null, "Password updated successfully"));
 });
 
@@ -542,3 +487,16 @@ export const leaveUpdate = asyncHandler(async (req, res) => {
       }
     
  });
+
+
+// upload resume
+export const uploadResume = asyncHandler(async (req, res) => {
+    const fileType = req.file.mimetype;
+
+    if (!fileType.includes("pdf")) {
+        throw new ApiError(400, "File should be pdf type");
+    }
+    const fileUrl = `${process.env.BASE_URL}/resumes/${req.file.filename}`;
+
+    res.status(200).json(new ApiResponse(fileUrl, "File uploaded successfully"));
+});

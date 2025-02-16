@@ -1,17 +1,23 @@
 import multer from 'multer';
 import path from 'path';
+import fs from "fs";
 
-// Configure storage settings
+const folderRoute = "./public/data/resumes";
+
+if (!fs.existsSync(folderRoute)) {
+  fs.mkdirSync(folderRoute, { recursive: true });
+}
+
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const fileType = file.mimetype;
-    console.log(fileType);
     let uploadPath = '';
 
-    // Set the upload path based on file type
     if (fileType.includes('pdf')) {
-      uploadPath = './public/data/resume';
-    } 
+      uploadPath = './public/data/resumes';
+    } else {
+      uploadPath = './public/data/others';
+    }
     cb(null, uploadPath);
   },
   filename: function (req, file, cb) {
@@ -23,7 +29,7 @@ const storage = multer.diskStorage({
   }
 });
 
-export const upload = multer({ 
+export const upload = multer({
   storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 * 1024 } 
+  limits: { fileSize: 5 * 1024 * 1024 }
 });
