@@ -29,42 +29,33 @@ export const registerHr = asyncHandler(async (req, res) => {
 
     const accessToken = await newHr.generateTokens();
     newHr.password = undefined;
-    newHr.otp = undefined;
-    newHr.refreshToken = undefined;
 
     res.status(201)
-        .json(new ApiResponse({ Hr: newHr, accessToken }, "Hr registered successfully"));
+        .json(new ApiResponse({ ...newHr, accessToken }, "Hr registered successfully"));
 });
 export const loginHr = asyncHandler(async (req, res) => {
-    const { email, device } = req.body;
+    const { email } = req.body;
 
     if (!email || !req.body.password) {
         throw new ApiError(400, "Email and password are required");
     }
 
-    let Hr = await Hr.findOne({ email });
-    if (!Hr) {
+    let hr = await Hr.findOne({ email });
+    if (!hr) {
         throw new ApiError(404, "Hr does not exist");
     }
 
-    const isPasswordValid = await Hr.isPasswordMatch(req.body.password);
+    const isPasswordValid = await hr.isPasswordMatch(req.body.password);
 
     if (!isPasswordValid) {
         throw new ApiError(401, "Invalid Hr credentials");
     }
-    Hr.device = device
-    await Hr.save()
-    const accessToken = await Hr.generateTokens();
-
-    const options = {
-        httpOnly: true,
-        secure: req.secure || req.headers['x-forwarded-proto'] === 'https',
-    };
-    const { password, otp, ...rest } = Hr._doc
+    const accessToken = await hr.generateTokens();
+    
+    const { password, otp, ...rest } = hr._doc
     res
         .status(200)
-        .cookie("accessToken", accessToken, options)
-        .json(new ApiResponse({ Hr: rest, accessToken }, "Logged-in successfully"));
+        .json(new ApiResponse({ ...rest, accessToken }, "Logged-in successfully"));
 });
 export const currentHr = asyncHandler(async (req, res) => {
     let currHr;
