@@ -419,3 +419,10 @@ export const uploadResume = asyncHandler(async (req, res) => {
 
     res.status(200).json(new ApiResponse(fileUrl, "File uploaded successfully"));
 });
+export const uploadDocs = asyncHandler(async (req, res) => {
+    const fileType = req.file.mimetype;
+
+    const fileUrl = `${process.env.BASE_URL}/leave/${req.file.filename}`;
+
+    res.status(200).json(new ApiResponse(fileUrl, "File uploaded successfully"));
+});
