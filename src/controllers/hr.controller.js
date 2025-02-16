@@ -336,7 +336,26 @@ export const candidateGet = asyncHandler(async (req, res) => {
           delete req.query.search
     }
     filter = {...filter,...req.query}
-   const data = await Candidate.find(filter)
+   const data = await Candidate.aggregate([
+    {
+        $match:filter
+    },
+    {
+        $lookup: {
+          from: 'positions',
+          let: { positionId: '$positionId' },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ['$_id', '$$positionId'] },
+              }
+            },
+          ],
+          as: 'position'
+        }
+      },
+      {$unwind:"$position"}
+   ])
      if(data?.length){
         res.status(201)
         .json(new ApiResponse(data, "Candidate get successfully"));
@@ -389,7 +408,26 @@ export const employeeGet = asyncHandler(async (req, res) => {
           delete req.query.search
     }
     filter = {...filter,...req.query}
-   const data = await Employee.find(filter)
+   const data = await Employee.aggregate([
+    {
+        $match:filter
+    },
+    {
+        $lookup: {
+          from: 'positions',
+          let: { positionId: '$positionId' },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ['$_id', '$$positionId'] },
+              }
+            },
+          ],
+          as: 'position'
+        }
+      },
+      {$unwind:"$position"}
+   ])
      if(data?.length){
         res.status(201)
         .json(new ApiResponse(data, "Employee get successfully"));
@@ -460,7 +498,23 @@ export const attendanceGet = asyncHandler(async (req, res) => {
               as: 'employee'
             }
           },
-          {$unwind:"$employee"}
+          {$unwind:"$employee"},
+          {
+            $lookup: {
+              from: 'positions',
+              let: { positionId: '$employee.positionId' },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: { $eq: ['$_id', '$$positionId'] },
+                  }
+                },
+              ],
+              as: 'employee.position'
+            }
+          },
+          {$unwind:{path:"$employee.position", preserveNullAndEmptyArrays:true}}
+
    ])
      if(data?.length){
         res.status(201)
