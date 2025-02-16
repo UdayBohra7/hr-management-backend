@@ -215,8 +215,8 @@ export const employeeGet = asyncHandler(async (req, res) => {
         ]
         delete req.query.search
     }
-    if (req.query.status) {
-        filter.status = req.query.status;
+    if (req.query.positionId) {
+        filter.positionId = new Types.ObjectId(String(req.query.positionId));
     }
     const data = await Employee.aggregate([
         {
@@ -327,10 +327,10 @@ export const attendanceGet = asyncHandler(async (req, res) => {
 
     ])
     if (data?.length) {
-        res.status(201)
+        res.status(200)
             .json(new ApiResponse(data, "Attendance get successfully"));
     } else {
-        res.status(400)
+        res.status(200)
             .json(new ApiResponse([], "Data not found"));
     }
 });
@@ -387,10 +387,10 @@ export const leaveGet = asyncHandler(async (req, res) => {
         { $unwind: "$employee" }
     ])
     if (data?.length) {
-        res.status(201)
+        res.status(200)
             .json(new ApiResponse(data, "Leave get successfully"));
     } else {
-        res.status(400)
+        res.status(200)
             .json(new ApiResponse([], "Data not found"));
     }
 });
