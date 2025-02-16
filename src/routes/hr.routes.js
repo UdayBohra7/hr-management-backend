@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { verifyToken } from "../middlewares/auth.middleware.js";
-import { currentHr, loginHr, registerHr, updateForgotPassword, updateHrDetails, updatePassword,getPosition,candidateAdd,candidateGet,candidateUpdate, candidateGetById, employeeAdd, employeeGet, employeeUpdate, employeeGetById, employeeDelete ,attendanceGet, attendanceUpdate, leaveAdd, leaveGet, leaveUpdate, uploadResume} from "../controllers/hr.controller.js";
+import { currentHr, loginHr, registerHr, getPosition,candidateAdd,candidateGet,candidateUpdate, candidateGetById, employeeAdd, employeeGet, employeeUpdate, employeeGetById, employeeDelete ,attendanceGet, attendanceUpdate, leaveAdd, leaveGet, leaveUpdate, uploadResume, candidateDelete} from "../controllers/hr.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 
 const hrRouter = Router();
@@ -9,9 +9,6 @@ const hrRouter = Router();
 hrRouter.route("/register").post(registerHr);
 hrRouter.route("/login").post(loginHr);
 hrRouter.route("/me").get(verifyToken, currentHr);
-hrRouter.route("/update").patch(verifyToken, updateHrDetails);
-hrRouter.route("/reset-password").patch(verifyToken, updatePassword);
-hrRouter.route("/forgot-password").patch(updateForgotPassword);
 
 hrRouter.route("/upload").post(verifyToken, upload.single("file"), uploadResume);
 hrRouter.route("/position").get(getPosition);
@@ -20,6 +17,7 @@ hrRouter.route("/candidate").post(candidateAdd);
 hrRouter.route("/candidate").get(candidateGet);
 hrRouter.route("/candidate/:candidateId").patch(candidateUpdate);
 hrRouter.route("/candidate/:candidateId").get(candidateGetById);
+hrRouter.route("/candidate/:candidateId").delete(candidateDelete);
 
 hrRouter.route("/employee").post(employeeAdd);
 hrRouter.route("/employee").get(employeeGet);
