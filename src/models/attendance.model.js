@@ -3,7 +3,6 @@ import { model, Schema } from "mongoose";
 const attendanceSchema = new Schema({
     task: {
         type: String,
-        required: true,
         trim: true
     },
     employeeId: {

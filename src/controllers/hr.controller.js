@@ -203,6 +203,8 @@ export const employeeAdd = asyncHandler(async (req, res) => {
     const newEmployee = new Employee(req.body);
     await newEmployee.save();
 
+    await Attendance.create({employeeId: newEmployee._id, status: "absent"});
+
     res.status(201)
         .json(new ApiResponse(newEmployee, "Employee registered successfully"));
 });
@@ -272,6 +274,7 @@ export const employeeUpdate = asyncHandler(async (req, res) => {
 export const employeeDelete = asyncHandler(async (req, res) => {
     const deleteData = await Employee.findByIdAndDelete(req.params.employeeId)
     if (deleteData) {
+        await Attendance.deleteOne({employeeId: deleteData._id})
         res.status(200)
             .json(new ApiResponse({}, "Employee delete successfully"));
     } else {
@@ -405,35 +408,6 @@ export const leaveUpdate = asyncHandler(async (req, res) => {
             .json(new ApiResponse({}, "Bad request!"));
     }
 
-});
-// present employees
-export const getPresentEmployees = asyncHandler(async (req, res) => {
-    let filter = {
-        status: 'present',
-        createdAt: {
-            $gte: moment().tz('Asia/Kolkata').startOf('day').toDate(),
-            $lte: moment().tz('Asia/Kolkata').endOf('day').toDate()
-        }
-    };
-
-    const data = await Attendance.aggregate([
-        { $match: filter },
-        {
-            $lookup: {
-                from: 'employees',
-                localField: 'employeeId',
-                foreignField: '_id',
-                as: 'employee'
-            }
-        },
-        { $unwind: "$employee" }
-    ]);
-
-    if (data.length) {
-        res.status(200).json(new ApiResponse(data, "Present employees fetched successfully"));
-    } else {
-        res.status(200).json(new ApiResponse([], "No present employees found"));
-    }
 });
 
 // upload resume

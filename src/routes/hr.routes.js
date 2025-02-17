@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { verifyToken } from "../middlewares/auth.middleware.js";
-import { currentHr, loginHr, registerHr, getPosition,candidateAdd,candidateGet,candidateUpdate, candidateGetById, employeeAdd, employeeGet, employeeUpdate, employeeGetById, employeeDelete ,attendanceGet, attendanceUpdate, leaveAdd, leaveGet, leaveUpdate, uploadResume, candidateDelete, uploadDocs, getPresentEmployees} from "../controllers/hr.controller.js";
+import { currentHr, loginHr, registerHr, getPosition,candidateAdd,candidateGet,candidateUpdate, candidateGetById, employeeAdd, employeeGet, employeeUpdate, employeeGetById, employeeDelete ,attendanceGet, attendanceUpdate, leaveAdd, leaveGet, leaveUpdate, uploadResume, candidateDelete, uploadDocs} from "../controllers/hr.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 
 const hrRouter = Router();
@@ -31,7 +31,6 @@ hrRouter.route("/attendance").get(verifyToken, attendanceGet);
 hrRouter.route("/attendance/:attendanceId").patch(verifyToken, attendanceUpdate);
 
 
-hrRouter.route("/present-employee").get(verifyToken, getPresentEmployees);
 hrRouter.route("/leave").post(verifyToken, leaveAdd);
 hrRouter.route("/leave").get(verifyToken, leaveGet);
 hrRouter.route("/leave/:leaveId").patch(verifyToken, leaveUpdate);
