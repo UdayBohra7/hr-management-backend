@@ -70,6 +70,12 @@ export const currentHr = asyncHandler(async (req, res) => {
 });
 
 
+export const createPosition = asyncHandler(async (req, res) => {
+    await Position.create(req.body);
+    res.status(201)
+        .json(new ApiResponse({}, "Position created successfully"));
+});
+
 export const getPosition = asyncHandler(async (req, res) => {
     const data = await Position.find({});
     if (data?.length) {

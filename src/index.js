@@ -11,9 +11,9 @@ app.on("error", (err) => {
     throw err;
 });
 
-app.use("/", (req, res) => {
-    res.send("Hello Management");
-});
+// app.use("/", (req, res) => {
+//     res.send("Hello Management");
+// });
 connectDB().then(() => {
     app.listen(port, () => {
         console.log(`app is listening to the ${port}`)
