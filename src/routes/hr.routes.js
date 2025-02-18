@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { verifyToken } from "../middlewares/auth.middleware.js";
-import { currentHr, loginHr, registerHr, getPosition,candidateAdd,candidateGet,candidateUpdate, candidateGetById, employeeAdd, employeeGet, employeeUpdate, employeeGetById, employeeDelete ,attendanceGet, attendanceUpdate, leaveAdd, leaveGet, leaveUpdate, uploadResume, candidateDelete, uploadDocs} from "../controllers/hr.controller.js";
+import { currentHr, loginHr, registerHr, getPosition,candidateAdd,candidateGet,candidateUpdate, candidateGetById, employeeAdd, employeeGet, employeeUpdate, employeeGetById, employeeDelete ,attendanceGet, attendanceUpdate, leaveAdd, leaveGet, leaveUpdate, uploadResume, candidateDelete, uploadDocs, createPosition} from "../controllers/hr.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 
 const hrRouter = Router();
@@ -12,7 +12,8 @@ hrRouter.route("/me").get(verifyToken, currentHr);
 
 hrRouter.route("/upload").post(verifyToken, upload.single("file"), uploadResume);
 hrRouter.route("/doc").post(verifyToken, upload.single("file"), uploadDocs);
-hrRouter.route("/position").get(verifyToken, getPosition);
+
+hrRouter.route("/position").get(verifyToken, getPosition).post(createPosition);
 
 hrRouter.route("/candidate").post(verifyToken, candidateAdd);
 hrRouter.route("/candidate").get(verifyToken, candidateGet);
